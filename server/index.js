@@ -1,13 +1,23 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const cron = require('node-cron');
-const newsRoutes = require('./routes/news');
-const videoRoutes = require('./routes/video');
-const settingsRoutes = require('./routes/settings');
-const { initializeServices } = require('./services/initialization');
+let newsRoutes, videoRoutes, settingsRoutes;
 
-dotenv.config();
+try {
+  newsRoutes = require('./routes/news');
+  videoRoutes = require('./routes/video');
+  settingsRoutes = require('./routes/settings');
+} catch (error) {
+  console.error('Error loading routes:', error.message);
+  process.exit(1);
+}
+const { initializeServices } = require('./services/initialization');
+// Load environment variables with error handling
+try {
+  require('dotenv').config();
+} catch (error) {
+  console.warn('dotenv not found, using environment variables');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,7 +41,8 @@ app.get('/api/health', (req, res) => {
       newsApi: !!process.env.NEWS_API_KEY,
       huggingFace: !!process.env.HUGGING_FACE_API_KEY,
       youtube: !!process.env.YOUTUBE_API_KEY
-    }
+    version: '1.0.0',
+    port: PORT
   });
 });
 
@@ -49,9 +60,10 @@ cron.schedule('0 */6 * * *', async () => {
 // Initialize services
 initializeServices();
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`AutoNews server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
