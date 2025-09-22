@@ -41,6 +41,7 @@ app.get('/api/health', (req, res) => {
       newsApi: !!process.env.NEWS_API_KEY,
       huggingFace: !!process.env.HUGGING_FACE_API_KEY,
       youtube: !!process.env.YOUTUBE_API_KEY
+    }
     version: '1.0.0',
     port: PORT
   });

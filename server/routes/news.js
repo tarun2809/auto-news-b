@@ -1,62 +1,54 @@
 const express = require('express');
-const axios = require('axios');
-const { summarizeArticle } = require('../services/nlp');
-const { categorizeArticle } = require('../services/categorization');
-
 const router = express.Router();
 
-// Fetch latest news
+// Import services with error handling
+let nlpService, categorization;
+try {
+  nlpService = require('../services/nlp');
+  categorization = require('../services/categorization');
+} catch (error) {
+  console.warn('Some services not available:', error.message);
+}
+
+// Fetch news from NewsAPI
 router.get('/fetch', async (req, res) => {
   try {
     const { category = 'general', country = 'us', pageSize = 20 } = req.query;
     
+    // Check if NEWS_API_KEY is available
     if (!process.env.NEWS_API_KEY) {
-      return res.status(400).json({ 
-        error: 'NewsAPI key not configured. Please add NEWS_API_KEY to your environment variables.' 
+      return res.status(500).json({ 
+        error: 'NEWS_API_KEY not configured',
+        articles: []
       });
     }
 
-    const response = await axios.get('https://newsapi.org/v2/top-headlines', {
-      params: {
-        country,
-        category: category === 'all' ? undefined : category,
-        pageSize,
-        apiKey: process.env.NEWS_API_KEY
-      }
+    const url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=${pageSize}&apiKey=${process.env.NEWS_API_KEY}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Add categories to articles
+    const articlesWithCategories = (data.articles || []).map(article => ({
+      ...article,
+      category: categorization ? categorization.categorizeArticle(article) : 'general'
+    }));
+    
+    res.json({
+      articles: articlesWithCategories,
+      totalResults: data.totalResults
     });
-
-    const articles = await Promise.all(
-      response.data.articles
-        .filter(article => article.title && article.description && article.urlToImage)
-        .map(async (article) => {
-          try {
-            const summary = await summarizeArticle(article.description);
-            const detectedCategory = await categorizeArticle(article.title + ' ' + article.description);
-            
-            return {
-              ...article,
-              summary,
-              category: detectedCategory || category,
-              id: generateArticleId(article.url)
-            };
-          } catch (error) {
-            console.error('Error processing article:', error);
-            return {
-              ...article,
-              summary: article.description,
-              category: category,
-              id: generateArticleId(article.url)
-            };
-          }
-        })
-    );
-
-    res.json({ articles, total: articles.length });
   } catch (error) {
-    console.error('News fetch error:', error);
+    console.error('Error fetching news:', error);
     res.status(500).json({ 
       error: 'Failed to fetch news',
-      details: error.response?.data?.message || error.message
+      details: error.message,
+      articles: []
     });
   }
 });
