@@ -11,15 +11,11 @@ import {
 } from 'lucide-react';
 import VideoPreview from '../components/VideoPreview';
 import GenerationProgress from '../components/GenerationProgress';
-import { apiService } from '../services/api';
-import { useNews } from '../context/NewsContext';
 
 const VideoStudio: React.FC = () => {
-  const { articles } = useNews();
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [generationStage, setGenerationStage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   const stages = [
     { name: 'Summarizing', icon: FileText, description: 'AI is processing the news article' },
@@ -28,65 +24,39 @@ const VideoStudio: React.FC = () => {
     { name: 'Complete', icon: Play, description: 'Video ready for preview' }
   ];
 
+  const mockArticles = [
+    {
+      id: 1,
+      title: 'Major Breakthrough in AI Technology Announced',
+      summary: 'A revolutionary AI system has been developed that can process natural language with unprecedented accuracy...',
+      category: 'Technology',
+      publishedAt: '2024-01-15T10:30:00Z'
+    },
+    {
+      id: 2,
+      title: 'Global Climate Summit Reaches Historic Agreement',
+      summary: 'World leaders unite on comprehensive climate action plan targeting net-zero emissions by 2050...',
+      category: 'Environment',
+      publishedAt: '2024-01-15T08:15:00Z'
+    }
+  ];
 
   const handleGenerateVideo = async () => {
-    if (!selectedArticle) return;
+    setGenerationStage('Summarizing');
+    setProgress(0);
 
-    try {
-      const response = await apiService.generateVideo(selectedArticle);
-      setCurrentJobId(response.jobId);
-      setGenerationStage('Summarizing');
-      setProgress(0);
-
-      // Poll for status updates
-      pollVideoStatus(response.jobId);
-    } catch (error) {
-      console.error('Failed to start video generation:', error);
-      alert('Failed to start video generation. Please try again.');
-    }
-  };
-
-  const pollVideoStatus = async (jobId: string) => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const status = await apiService.getVideoStatus(jobId);
-        
-        setGenerationStage(status.stage);
-        setProgress(status.progress);
-        
-        if (status.status === 'completed' || status.status === 'failed') {
-          clearInterval(pollInterval);
-          setCurrentJobId(null);
-          
-          if (status.status === 'failed') {
-            alert('Video generation failed: ' + status.error);
-          }
-          
-          setGenerationStage(null);
-          setProgress(0);
-        }
-      } catch (error) {
-        console.error('Failed to get video status:', error);
-        clearInterval(pollInterval);
-        setCurrentJobId(null);
-        setGenerationStage(null);
-        setProgress(0);
+    for (let i = 0; i < stages.length; i++) {
+      setGenerationStage(stages[i].name);
+      
+      // Simulate progress
+      for (let j = 0; j <= 100; j += 10) {
+        setProgress((i * 100 + j) / stages.length);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
-    }, 2000);
-  };
+    }
 
-  // Use real articles from context
-  const availableArticles = articles.slice(0, 10); // Show first 10 articles
-
-  if (availableArticles.length === 0) {
-    return (
-      <div className="p-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Video Studio</h1>
-          <p className="text-gray-600">No articles available. Please fetch news articles first from the News Manager.</p>
-        </div>
-      </div>
-    );
+    setGenerationStage(null);
+    setProgress(0);
   };
 
   return (
@@ -103,12 +73,12 @@ const VideoStudio: React.FC = () => {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Article</h2>
             <div className="space-y-3">
-              {availableArticles.map((article, index) => (
+              {mockArticles.map((article) => (
                 <div
-                  key={index}
-                  onClick={() => setSelectedArticle(article as any)}
+                  key={article.id}
+                  onClick={() => setSelectedArticle(article)}
                   className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-                    selectedArticle?.title === article.title
+                    selectedArticle?.id === article.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}

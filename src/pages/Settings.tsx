@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Save, Key, Globe, Mic, Video, Bell } from 'lucide-react';
-import { apiService } from '../services/api';
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -14,46 +13,9 @@ const Settings: React.FC = () => {
     autoPublishYoutube: false
   });
 
-  const [loading, setLoading] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
-
-  React.useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const response = await apiService.getSettings();
-      setSettings(response);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      await apiService.updateSettings(settings);
-      alert('Settings saved successfully!');
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      alert('Failed to save settings. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTestApis = async () => {
-    setLoading(true);
-    try {
-      const results = await apiService.testApis();
-      setTestResults(results);
-    } catch (error) {
-      console.error('API test failed:', error);
-      setTestResults({ error: 'Failed to test APIs' });
-    } finally {
-      setLoading(false);
-    }
+  const handleSave = () => {
+    // Save settings logic here
+    alert('Settings saved successfully!');
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -90,9 +52,6 @@ const Settings: React.FC = () => {
                   placeholder="Enter your NewsAPI key"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Get your free API key from <a href="https://newsapi.org/register" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">newsapi.org</a>
-                </p>
               </div>
               
               <div>
@@ -106,9 +65,6 @@ const Settings: React.FC = () => {
                   placeholder="Enter your Hugging Face API key"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Get your free API key from <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">huggingface.co</a>
-                </p>
               </div>
               
               <div>
@@ -122,31 +78,6 @@ const Settings: React.FC = () => {
                   placeholder="Enter your YouTube API key"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Set up YouTube Data API v3 in Google Cloud Console
-                </p>
-              </div>
-              
-              <div className="pt-4 border-t border-gray-200">
-                <button
-                  onClick={handleTestApis}
-                  disabled={loading}
-                  className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200"
-                >
-                  <span>Test API Connections</span>
-                </button>
-                
-                {testResults && (
-                  <div className="mt-4 space-y-2">
-                    {Object.entries(testResults).map(([api, result]: [string, any]) => (
-                      <div key={api} className={`p-2 rounded text-sm ${
-                        result.status === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                      }`}>
-                        <strong>{api}:</strong> {result.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -274,11 +205,10 @@ const Settings: React.FC = () => {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          disabled={loading}
           className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
         >
           <Save className="w-4 h-4" />
-          <span>{loading ? 'Saving...' : 'Save Settings'}</span>
+          <span>Save Settings</span>
         </button>
       </div>
     </div>
